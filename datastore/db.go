@@ -45,6 +45,7 @@ type Db struct {
 	writeCh        chan writeMsg
 	mu             sync.RWMutex
 	isClosed       bool
+	wq             *workerQueue
 
 	index hashIndex
 }
@@ -56,6 +57,7 @@ func NewDb(dir string, options DbOptions) (*Db, error) {
 		maxSegmentSize: options.MaxSegmentSize,
 		dir:            dir,
 	}
+	db.wq = newWorkerQueue(db.get, options.WorkerPoolSize)
 	err := db.recover()
 	if err != nil {
 		return nil, err
@@ -169,11 +171,12 @@ func (db *Db) Close() error {
 		return nil
 	}
 	close(db.writeCh)
+	db.wq.Close()
 	db.isClosed = true
 	return db.segment.Close()
 }
 
-func (db *Db) Get(key string) (string, error) {
+func (db *Db) get(key string) (string, error) {
 	if db.isClosed {
 		return "", ErrDbClosed
 	}
@@ -199,6 +202,10 @@ func (db *Db) Get(key string) (string, error) {
 		return "", err
 	}
 	return value, nil
+}
+
+func (db *Db) Get(key string) (string, error) {
+	return db.wq.Do(key)
 }
 
 func (db *Db) write() {
@@ -245,7 +252,7 @@ func (db *Db) Copy(filename string) (int64, hashIndex, error) {
 	}
 	defer swap.Close()
 	for key := range db.index {
-		value, err := db.Get(key)
+		value, err := db.get(key)
 		if err != nil {
 			os.Remove(filename)
 			return 0, nil, err
