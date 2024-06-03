@@ -12,8 +12,8 @@ import (
 	"sync"
 	"time"
 
-	"github.com/vladimirkoff/arch-lab-4/httptools"
-	"github.com/vladimirkoff/arch-lab-4/signal"
+	"github.com/DanyloM73/arch-lab-5/httptools"
+	"github.com/DanyloM73/arch-lab-5/signal"
 )
 
 var (

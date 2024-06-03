@@ -1,4 +1,4 @@
-module github.com/vladimirkoff/arch-lab-4
+module github.com/DanyloM73/arch-lab-5
 
 go 1.22
 
