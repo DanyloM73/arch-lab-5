@@ -43,7 +43,7 @@ func TestBalancer(t *testing.T) {
 			t.Errorf("Expected status code 200, got %d", resp.StatusCode)
 		}
 
-		var data []string
+		var data map[string]interface{}
 		if err := json.NewDecoder(resp.Body).Decode(&data); err != nil {
 			t.Error(err)
 			continue
