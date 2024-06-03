@@ -1,6 +1,7 @@
 package integration
 
 import (
+	"encoding/json"
 	"fmt"
 	"net/http"
 	"os"
@@ -8,7 +9,13 @@ import (
 	"time"
 )
 
+type Result struct {
+	Key   string `json:"key"`
+	Value string `json:"value"`
+}
+
 const baseAddress = "http://balancer:8090"
+const teamName = "arch-team-21"
 
 var client = http.Client{
 	Timeout: 3 * time.Second,
@@ -22,9 +29,9 @@ func TestBalancer(t *testing.T) {
 	numRequests := 3
 
 	addresses := []string{
-		fmt.Sprintf("%s/api/v1/some-data", baseAddress),
-		fmt.Sprintf("%s/api/v1/some-data2", baseAddress),
-		fmt.Sprintf("%s/api/v1/some-data", baseAddress),
+		fmt.Sprintf("%s/api/v1/some-data?key=%s", baseAddress, teamName),
+		fmt.Sprintf("%s/api/v1/some-data?key=%s", baseAddress, teamName),
+		fmt.Sprintf("%s/api/v1/some-data?key=%s", baseAddress, teamName),
 	}
 
 	servers := make([]string, numRequests)
@@ -35,16 +42,27 @@ func TestBalancer(t *testing.T) {
 			t.Error(err)
 			continue
 		}
-		if resp != nil {
-			defer resp.Body.Close()
-			server := resp.Header.Get("lb-from")
-			if server == "" {
-				t.Errorf("Missing 'lb-from' header in response for request %d", i)
-			}
-			servers[i] = server
-		} else {
-			t.Errorf("Response is nil for request %d", i)
+		defer resp.Body.Close()
+
+		if resp.StatusCode != http.StatusOK {
+			t.Errorf("Expected status code 200, got %d", resp.StatusCode)
 		}
+
+		var data Result
+		if err := json.NewDecoder(resp.Body).Decode(&data); err != nil {
+			t.Error(err)
+			continue
+		}
+
+		if data.Value == "" {
+			t.Errorf("Expected non-empty data, got empty")
+		}
+
+		server := resp.Header.Get("lb-from")
+		if server == "" {
+			t.Errorf("Missing 'lb-from' header in response for request %d", i)
+		}
+		servers[i] = server
 	}
 
 	if servers[0] != servers[2] {

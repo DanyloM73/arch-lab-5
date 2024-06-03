@@ -43,16 +43,21 @@ func scheme() string {
 }
 
 func health(dst string) bool {
+	log.Println("Checking health of", dst)
 	ctx, _ := context.WithTimeout(context.Background(), timeout)
 	req, _ := http.NewRequestWithContext(ctx, "GET",
 		fmt.Sprintf("%s://%s/health", scheme(), dst), nil)
 	resp, err := http.DefaultClient.Do(req)
 	if err != nil {
+		log.Printf("Failed to check health of %s: %s", dst, err)
 		return false
 	}
 	if resp.StatusCode != http.StatusOK {
+		log.Printf("Failed to check health of %s: status code %d", dst, resp.StatusCode)
 		return false
 	}
+
+	log.Println("Health check of", dst, "succeeded")
 	return true
 }
 
