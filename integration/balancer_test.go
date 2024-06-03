@@ -9,6 +9,11 @@ import (
 	"time"
 )
 
+type Result struct {
+	Key   string `json:"key"`
+	Value string `json:"value"`
+}
+
 const baseAddress = "http://balancer:8090"
 const teamName = "arch-team-21" // замените на имя вашей команды
 
@@ -43,13 +48,13 @@ func TestBalancer(t *testing.T) {
 			t.Errorf("Expected status code 200, got %d", resp.StatusCode)
 		}
 
-		var data map[string]interface{}
+		var data Result
 		if err := json.NewDecoder(resp.Body).Decode(&data); err != nil {
 			t.Error(err)
 			continue
 		}
 
-		if len(data) == 0 {
+		if data.Value == "" {
 			t.Errorf("Expected non-empty data, got empty")
 		}
 
